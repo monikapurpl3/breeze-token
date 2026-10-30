@@ -9,7 +9,9 @@ set -eu
 
 [ "$#" -eq 1 ] || { echo "usage: sh stage.sh OUT" >&2; exit 2; }
 REPO=$(cd "$(dirname "$0")" && pwd)
-OUT=$1
+# Where it was called from, before the cd below.
+mkdir -p "$1"
+OUT=$(cd "$1" && pwd)
 cd "$REPO"
 
 if [ -n "$(git status --porcelain)" ]; then
