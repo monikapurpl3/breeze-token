@@ -59,6 +59,9 @@ try {
     $Got = (Get-FileHash -Algorithm SHA256 -LiteralPath $Exe).Hash.ToLowerInvariant()
     if ($Got -ne $Best.Groups[1].Value) { throw "$($Best.Groups[2].Value) does not match its SHA-256 in SHA256SUMS; nothing was run" }
     Write-Host "breeze-token $($Best.Groups[3].Value) for $Me, checked against its SHA-256. It runs once and is deleted afterwards."
+    # Its messages on stderr are its own, not errors: Windows PowerShell 5.1
+    # would otherwise throw on the first one whenever stderr is redirected.
+    $ErrorActionPreference = 'Continue'
     & $Exe @args
     $global:LASTEXITCODE = $LASTEXITCODE
 } catch {
