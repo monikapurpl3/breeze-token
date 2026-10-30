@@ -60,6 +60,39 @@ network, and it keeps `fetch`'s promises:
 - **It is Breeze Core's own code**: its cloud flows, discovery, handshake and
   config.json writer, from the release it follows, not a copy of them.
 
+## Running it
+
+Once, with nothing installed. **Linux, macOS:**
+
+```sh
+curl -fsSL https://aspic.salataputarica.hr.eu.org/breeze-token/run.sh | sh
+```
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://aspic.salataputarica.hr.eu.org/breeze-token/run.ps1 | iex
+```
+
+Either one downloads this machine's breeze-token into a temporary directory,
+checks it against its SHA-256 in
+[SHA256SUMS](https://aspic.salataputarica.hr.eu.org/breeze-token/SHA256SUMS),
+runs it, and deletes it again. Arguments go after `sh -s --`, or, in
+PowerShell, after the script block:
+
+```sh
+curl -fsSL https://aspic.salataputarica.hr.eu.org/breeze-token/run.sh | sh -s -- --write config.json
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://aspic.salataputarica.hr.eu.org/breeze-token/run.ps1))) --write config.json
+```
+
+Builds: Linux (x86-64, ARM64, ARMv7, ARMv6, RISC-V; static, so any
+distribution), macOS 13+ (Apple silicon and Intel) and Windows. The binaries
+are on the [same page](https://aspic.salataputarica.hr.eu.org/breeze-token/),
+named in SHA256SUMS.
+
 ## Using it
 
 ```sh
@@ -69,8 +102,10 @@ breeze-token --to 192.168.1.10          # a running Breeze μcore or Breeze Core
 
 `--write` makes the file if it is not there, with an API key, and otherwise
 adds the units to it (a unit already there keeps its name) after copying it to
-`config.json.before-breeze-token`. This is the way for Breeze Core 3.x, and
-for a server that is not running yet.
+`config.json.before-breeze-token`. The file keeps its owner, group and mode,
+so `sudo breeze-token --write /etc/breeze-core/config.json` leaves it readable
+by a server that runs as its own user. This is the way for Breeze Core 3.x,
+and for a server that is not running yet.
 
 `--to` pairs with the server the way the app does, approving itself if this
 machine is on the server's network, adds the units with `POST /api/units`, and
@@ -105,6 +140,7 @@ altogether. Keep a copy of the config.json somewhere safe.
 ```sh
 cargo build --release      # target/release/breeze-token
 cargo test
+sh packaging/build.sh      # every release binary, and SHA256SUMS, into packaging/out/
 ```
 
 The end-to-end test (`tests/end_to_end.rs`) drives breeze-mock's units with

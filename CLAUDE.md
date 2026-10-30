@@ -16,6 +16,10 @@ checked on the unit, handed to any Breeze Core (μcore, native 4.x, Python
 | `src/server.rs` | `--to`: pairing (v1 or signed v2), `POST /api/units`, unpairing |
 | `src/talk.rs` | `fetch`'s wording helpers |
 | `tests/end_to_end.rs` | the whole thing against real servers on breeze-mock units |
+| `run.sh`, `run.ps1` | the `curl \| sh` / `irm \| iex` runners: download, check, run once, delete |
+| `packaging/build.sh` | the eight release binaries and SHA256SUMS into `packaging/out/` |
+| `packaging/macos/` | the CoreFoundation link stub, from breeze-core-native |
+| `stage.sh OUT` | what aspic serves under `/breeze-token/` |
 
 ## Rules that are not obvious from the code
 
@@ -36,6 +40,15 @@ checked on the unit, handed to any Breeze Core (μcore, native 4.x, Python
 - **Leave no pairing behind.** `Server`'s `Drop` revokes it; the test checks
   `devices.json` after every `--to`. Exit through `main`'s return, never
   `process::exit` from inside `run`, or the drop does not happen.
+- **A config.json keeps its owner, group and mode** (`Owner` in
+  `config_file.rs`). breeze-store's save replaces the file, so under sudo it
+  would come out root:root, and the packages' service runs as `breeze`: it
+  could no longer read its configuration. A new file gets its directory's
+  owner. The end-to-end test checks both, as root.
+- **The runners are POSIX sh and plain-ASCII PowerShell** (5.1 reads a file
+  without a BOM as ANSI; `stage.sh` refuses one that is not ASCII). Under
+  `curl | sh` stdin is the script, so the binary gets `/dev/tty`; under
+  `irm | iex` everything is in a child scope and nothing may `exit`.
 - **Breeze Core 3.x cannot take units over its API** (its add asks Midea and
   fails), so `--to` refuses a 3.x or 2.x server and points at `--write`.
 
@@ -69,5 +82,9 @@ its tests, dev-dependency features end up in it.
 
 ## Publishing
 
-Local repository only. A GitHub repository, release binaries and where the
-curl-able runner is served are the maintainer's decision.
+Public at github.com/monikapurpl3/breeze-token since 2026-10-30. Served from
+aspic under `/breeze-token/`: `sh packaging/build.sh`, commit, then from
+breeze-core-native `./packaging/repo/stage-breeze-token.sh` (which runs
+`stage.sh`) and `./site/publish.sh --tree packaging/out/aspic`, carrying the
+maintainer's live pages into the tree first (see its release/PRIVATE.md).
+Each publish waits for the maintainer's yes.

@@ -76,13 +76,23 @@ impl ConfigFile {
                 }),
             }
         }
+        let owner = Owner::of(&self.path, self.existed);
         breeze_store::save(&self.path, &self.config, Mode::AdminReadable).map_err(|e| format!("cannot write {}: {e}", self.path))?;
+        let owner_kept = owner.restore(&self.path);
 
         crate::talk::heading("Saved");
         let names: Vec<&str> = got.iter().filter_map(|f| self.unit(f.unit.id)).map(|u| u.name.as_str()).collect();
         say(&format!("{} now in {}.", names.join(", "), self.path));
         if self.existed {
             say(&format!("The version before this is in {backup}."));
+        }
+        if let Err(e) = owner_kept {
+            say(&format!(
+                "!! It could not be given back to its owner ({e}), and the server may not be able to read \
+                 it now. Give it back with: chown {} {}",
+                owner.ids(),
+                self.path
+            ));
         }
         if minted {
             say(
@@ -99,5 +109,75 @@ impl ConfigFile {
              handing them out altogether, and then that copy is the only one there is.",
         );
         Ok(())
+    }
+}
+
+/// Who a config.json belongs to, so that writing it -- which replaces the
+/// file, as Breeze Core's store does -- does not hand it to whoever ran this.
+/// Under sudo that would be root, and a server running as its own user (the
+/// packages' `breeze`) could no longer read its configuration.
+///
+/// A file being replaced keeps its owner, group and mode. A new one gets its
+/// directory's owner and group, as if the server had made it there.
+#[cfg(unix)]
+struct Owner {
+    uid: u32,
+    gid: u32,
+    mode: Option<u32>,
+}
+
+#[cfg(unix)]
+impl Owner {
+    fn of(path: &str, existed: bool) -> Self {
+        use std::os::unix::fs::MetadataExt;
+        let path = std::path::Path::new(path);
+        let (meta, mode) = if existed {
+            let m = std::fs::metadata(path).ok();
+            let mode = m.as_ref().map(|m| m.mode() & 0o7777);
+            (m, mode)
+        } else {
+            let dir = path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(std::path::Path::new("."));
+            (std::fs::metadata(dir).ok(), None)
+        };
+        match meta {
+            Some(m) => Self { uid: m.uid(), gid: m.gid(), mode },
+            // Nothing to go by: whatever writing it gives.
+            None => Self { uid: u32::MAX, gid: u32::MAX, mode: None },
+        }
+    }
+
+    fn restore(&self, path: &str) -> Result<(), String> {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        if let Some(mode) = self.mode {
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)).map_err(|e| e.to_string())?;
+        }
+        let now = std::fs::metadata(path).map_err(|e| e.to_string())?;
+        if self.uid == u32::MAX || (now.uid() == self.uid && now.gid() == self.gid) {
+            return Ok(());
+        }
+        std::os::unix::fs::chown(path, Some(self.uid), Some(self.gid)).map_err(|e| e.to_string())
+    }
+
+    fn ids(&self) -> String {
+        format!("{}:{}", self.uid, self.gid)
+    }
+}
+
+/// Windows: no owners to keep; a server's folder ACL decides.
+#[cfg(not(unix))]
+struct Owner;
+
+#[cfg(not(unix))]
+impl Owner {
+    fn of(_path: &str, _existed: bool) -> Self {
+        Owner
+    }
+
+    fn restore(&self, _path: &str) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn ids(&self) -> String {
+        String::new()
     }
 }

@@ -243,6 +243,30 @@ fn tokens_reach_every_kind_of_breeze_core() {
     assert_eq!(merged["units"].as_array().unwrap().len(), 1, "only the unit asked about");
     let u = &merged["units"][0];
     assert_eq!((&u["name"], &u["ip"], &u["token"]), (&json!("Kept name"), &json!("10.94.2.2"), &env.alpha["token"]));
+    // Written as root (this runs as root in its container), as `sudo` would:
+    // a replaced file keeps its owner and mode, and a new one gets its
+    // directory's owner -- or a server running as its own user could no
+    // longer read it.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{chown, MetadataExt, PermissionsExt};
+        let owned = env.dir("owned", Some(json!({"api_key": KEY, "units": []})));
+        let file = owned.join("config.json");
+        chown(&owned, Some(1842), Some(1842)).unwrap();
+        chown(&file, Some(1842), Some(1842)).unwrap();
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o600)).unwrap();
+        let (code, text) = env.token(&["--ip", "10.94.2.2", "--write", file.to_str().unwrap()], PASSWORD, None);
+        assert_eq!(code, 0, "{text}");
+        let m = std::fs::metadata(&file).unwrap();
+        assert_eq!((m.uid(), m.gid(), m.mode() & 0o777), (1842, 1842, 0o600), "the replaced file's owner and mode");
+        let fresh = env.dir("owned-new", None);
+        chown(&fresh, Some(1843), Some(1843)).unwrap();
+        let file = fresh.join("config.json");
+        let (code, text) = env.token(&["--ip", "10.94.2.2", "--write", file.to_str().unwrap()], PASSWORD, None);
+        assert_eq!(code, 0, "{text}");
+        let m = std::fs::metadata(&file).unwrap();
+        assert_eq!((m.uid(), m.gid(), m.mode() & 0o777), (1843, 1843, 0o640), "a new file's owner and mode");
+    }
     // Run again: the unit has its token now, and a sweep leaves it alone.
     let (code, text) = env.token(&["--subnet", "10.94.2.0/30", "--write", file.to_str().unwrap()], PASSWORD, None);
     assert_eq!(code, 0, "{text}");
