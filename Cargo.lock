@@ -46,7 +46,7 @@ dependencies = [
 [[package]]
 name = "breeze-cloud"
 version = "0.1.0"
-source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.3.2#2ef0d09eac71a5f49384e3b625fb7f2ad98afdfe"
+source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.4.0#f950a77d3f1578facb48f752285f663951711483"
 dependencies = [
  "base64",
  "getrandom",
@@ -61,7 +61,7 @@ dependencies = [
 [[package]]
 name = "breeze-device"
 version = "0.1.0"
-source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.3.2#2ef0d09eac71a5f49384e3b625fb7f2ad98afdfe"
+source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.4.0#f950a77d3f1578facb48f752285f663951711483"
 dependencies = [
  "breeze-proto",
 ]
@@ -69,7 +69,7 @@ dependencies = [
 [[package]]
 name = "breeze-proto"
 version = "0.1.0"
-source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.3.2#2ef0d09eac71a5f49384e3b625fb7f2ad98afdfe"
+source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.4.0#f950a77d3f1578facb48f752285f663951711483"
 dependencies = [
  "aes",
  "md-5",
@@ -79,7 +79,7 @@ dependencies = [
 [[package]]
 name = "breeze-store"
 version = "0.1.0"
-source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.3.2#2ef0d09eac71a5f49384e3b625fb7f2ad98afdfe"
+source = "git+https://github.com/monikapurpl3/breeze-core-native?tag=v4.4.0#f950a77d3f1578facb48f752285f663951711483"
 dependencies = [
  "chrono",
  "serde",
@@ -88,7 +88,7 @@ dependencies = [
 
 [[package]]
 name = "breeze-token"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "base64",
  "breeze-cloud",

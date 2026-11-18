@@ -1,5 +1,5 @@
 //! breeze-token end to end, with everything real but Midea: breeze-mock's
-//! units, Breeze Core 4.3.2 and Breeze μcore as the servers, and a pretend
+//! units, Breeze Core 4.4.0 and Breeze μcore as the servers, and a pretend
 //! MSmartHome account (the `fake-cloud` feature) that holds the units'
 //! tokens.
 //!
@@ -244,9 +244,10 @@ fn tokens_reach_every_kind_of_breeze_core() {
     let u = &merged["units"][0];
     assert_eq!((&u["name"], &u["ip"], &u["token"]), (&json!("Kept name"), &json!("10.94.2.2"), &env.alpha["token"]));
     // Written as root (this runs as root in its container), as `sudo` would:
-    // a replaced file keeps its owner and mode, and a new one gets its
-    // directory's owner -- or a server running as its own user could no
-    // longer read it.
+    // a replaced file keeps its owner, and a new one gets its directory's --
+    // or a server running as its own user could no longer read it. The mode
+    // is Breeze Core's own 640 either way, as its store makes it (4.4.0+).
+    // An odd mode to start with, to show it is not merely left alone.
     #[cfg(unix)]
     {
         use std::os::unix::fs::{chown, MetadataExt, PermissionsExt};
@@ -258,7 +259,7 @@ fn tokens_reach_every_kind_of_breeze_core() {
         let (code, text) = env.token(&["--ip", "10.94.2.2", "--write", file.to_str().unwrap()], PASSWORD, None);
         assert_eq!(code, 0, "{text}");
         let m = std::fs::metadata(&file).unwrap();
-        assert_eq!((m.uid(), m.gid(), m.mode() & 0o777), (1842, 1842, 0o600), "the replaced file's owner and mode");
+        assert_eq!((m.uid(), m.gid(), m.mode() & 0o777), (1842, 1842, 0o640), "the replaced file's owner, Breeze Core's mode");
         let fresh = env.dir("owned-new", None);
         chown(&fresh, Some(1843), Some(1843)).unwrap();
         let file = fresh.join("config.json");
@@ -272,7 +273,7 @@ fn tokens_reach_every_kind_of_breeze_core() {
     assert_eq!(code, 0, "{text}");
     assert!(text.contains("its token and key are there already"), "{text}");
 
-    // --- 3. To a running server: Breeze Core 4.3.2 and μcore, which start
+    // --- 3. To a running server: Breeze Core 4.4.0 and μcore, which start
     // with no units. Paired (signed requests), added, unpaired.
     let mut configs = Vec::new();
     for (name, bin, port) in [("to-core", &env.core_bin, 29521u16), ("to-ucore", &env.ucore_bin, 29522)] {

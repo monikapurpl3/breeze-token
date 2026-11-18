@@ -1,6 +1,6 @@
 [package]
 name = "breeze-token"
-version = "1.0.0"
+version = "1.0.1"
 description = "A V3 air conditioner's token and key, from the Midea account it is paired with, for any Breeze Core"
 edition = "2021"
 # It links Breeze Core's own crates, which are AGPL.
@@ -12,10 +12,10 @@ publish = false
 # Breeze Core's own crates, at a release: the cloud flows, discovery and the V3
 # handshake that checks a token, and config.json exactly as Breeze Core writes
 # it. Nothing here re-implements them.
-breeze-cloud = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.3.2" }
-breeze-device = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.3.2" }
-breeze-proto = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.3.2" }
-breeze-store = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.3.2" }
+breeze-cloud = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.4.0" }
+breeze-device = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.4.0" }
+breeze-proto = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.4.0" }
+breeze-store = { git = "https://github.com/monikapurpl3/breeze-core-native", tag = "v4.4.0" }
 serde_json = "1"
 # The same ureq breeze-cloud uses, so talking to a server costs nothing extra.
 ureq = { version = "2", default-features = false, features = ["tls", "json"] }

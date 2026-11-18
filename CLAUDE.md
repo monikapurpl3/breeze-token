@@ -23,7 +23,7 @@ checked on the unit, handed to any Breeze Core (μcore, native 4.x, Python
 
 ## Rules that are not obvious from the code
 
-- **Breeze Core's crates, by tag** (`v4.3.2` of breeze-core-native):
+- **Breeze Core's crates, by tag** (`v4.4.0` of breeze-core-native):
   breeze-cloud, breeze-device, breeze-proto, breeze-store. Never copy their
   code in. The flow in `main.rs` follows `crates/breeze-core/src/cli/fetch.rs`
   word for word where it can, so a change there is a change here.
@@ -40,11 +40,14 @@ checked on the unit, handed to any Breeze Core (μcore, native 4.x, Python
 - **Leave no pairing behind.** `Server`'s `Drop` revokes it; the test checks
   `devices.json` after every `--to`. Exit through `main`'s return, never
   `process::exit` from inside `run`, or the drop does not happen.
-- **A config.json keeps its owner, group and mode** (`Owner` in
-  `config_file.rs`). breeze-store's save replaces the file, so under sudo it
-  would come out root:root, and the packages' service runs as `breeze`: it
-  could no longer read its configuration. A new file gets its directory's
-  owner. The end-to-end test checks both, as root.
+- **A config.json keeps its owner and group**, and a new one gets its
+  directory's: breeze-store's save does that itself since 4.4.0 (until then
+  breeze-token carried its own `Owner`, and 1.0.1 dropped it). Under sudo the
+  file would otherwise come out root:root, and the packages' service runs as
+  `breeze`: it could no longer read its configuration. The mode is Breeze
+  Core's 640, whatever it was. If root cannot hand the file over, the store
+  leaves the old one in place and says why. The end-to-end test checks both
+  cases, as root.
 - **The runners are POSIX sh and plain-ASCII PowerShell** (5.1 reads a file
   without a BOM as ANSI; `stage.sh` refuses one that is not ASCII). Under
   `curl | sh` stdin is the script, so the binary gets `/dev/tty`; under
@@ -65,7 +68,7 @@ The end-to-end run (Linux, `CAP_NET_ADMIN`), as it was done on mrrp:
 PATH=/c/Users/Admin/zig/zig-x86_64-windows-0.16.0:$PATH \
   cargo zigbuild --release --target x86_64-unknown-linux-musl --features fake-cloud \
   --bin breeze-token --test end_to_end
-# copy breeze-token, end_to_end-<hash>, breeze-core 4.3.2 (amd64), breeze-mock and
+# copy breeze-token, end_to_end-<hash>, breeze-core 4.4.0 (amd64), breeze-mock and
 # μcore's musl `ucore` to ~/breeze-token-e2e on mrrp, then:
 podman run --rm --cap-add NET_ADMIN -v "$PWD":/t:Z docker.io/library/alpine:3 sh -c \
   "apk add -q iproute2 && cd /t && BREEZE_DUMMY_SEGMENTS=1 BREEZE_TOKEN_BIN=/t/breeze-token \

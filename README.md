@@ -102,9 +102,10 @@ breeze-token --to 192.168.1.10          # a running Breeze μcore or Breeze Core
 
 `--write` makes the file if it is not there, with an API key, and otherwise
 adds the units to it (a unit already there keeps its name) after copying it to
-`config.json.before-breeze-token`. The file keeps its owner, group and mode,
-so `sudo breeze-token --write /etc/breeze-core/config.json` leaves it readable
-by a server that runs as its own user. This is the way for Breeze Core 3.x,
+`config.json.before-breeze-token`. The file keeps its owner and group (a new
+one gets its folder's), so `sudo breeze-token --write
+/etc/breeze-core/config.json` leaves it readable by a server that runs as its
+own user. Its mode is 640, as Breeze Core writes it. This is the way for Breeze Core 3.x,
 and for a server that is not running yet.
 
 `--to` pairs with the server the way the app does, approving itself if this
@@ -144,7 +145,7 @@ sh packaging/build.sh      # every release binary, and SHA256SUMS, into packagin
 ```
 
 The end-to-end test (`tests/end_to_end.rs`) drives breeze-mock's units with
-Breeze Core 4.3.2 and Breeze μcore as the servers, and a pretend MSmartHome
+Breeze Core 4.4.0 and Breeze μcore as the servers, and a pretend MSmartHome
 account (the `fake-cloud` feature). It needs Linux with `CAP_NET_ADMIN` (a
 container is enough), and its header says how to run it. Nothing here is
 ever tested against a real Midea account.
