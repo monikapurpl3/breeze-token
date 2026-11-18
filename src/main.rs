@@ -1,10 +1,11 @@
 //! breeze-token -- a V3 air conditioner's token and key, from the Midea
 //! account the unit is paired with, for whichever Breeze Core drives it:
-//! Breeze μcore, Breeze Core 4, or the Python 3.x line.
+//! Breeze Core 4, the Python 3.x line, or (through its deployer) Breeze μCore.
 //!
 //! Breeze Core's own `breeze-core fetch`, standing alone, so that a server
-//! that cannot ask Midea itself still gets its units' credentials: μcore has
-//! no TLS and no cloud, and the Python line's cloud request stopped working.
+//! that cannot ask Midea itself still gets its units' credentials: the
+//! Python line's cloud request stopped working, and Breeze μCore has no TLS
+//! and no cloud (its deployer uses this crate's library to fetch them).
 //! It runs on any machine on the units' network and keeps `fetch`'s promises:
 //!
 //! * **The password goes only to a cloud that has the account.** Which clouds
@@ -15,16 +16,15 @@
 //! * **Tokens are never printed.** They go into a config.json, backed up first,
 //!   or to a server over its own API, and nowhere else.
 
-mod clouds;
 mod config_file;
-mod lan;
 mod server;
 mod talk;
 
-use breeze_cloud::{Appliance, Cloud, CloudError, Credentials, Token};
+use breeze_cloud::{Appliance, Cloud, CloudError, Credentials};
 use breeze_proto::discover::{Discovered, Version};
 
-use clouds::{Account, Clouds};
+use breeze_token::clouds::{self, Account, Clouds};
+use breeze_token::{lan, Fetched};
 use config_file::ConfigFile;
 use server::Server;
 use talk::{ask, heading, say, yes_no};
@@ -45,9 +45,11 @@ itself, and hands them over -- never printed -- to one of:
 
   --write FILE      a Breeze Core config.json, made if it is not there (and
                     backed up to FILE.before-breeze-token if it is). Breeze
-                    μcore, Breeze Core 4 and Breeze Core 3.x all read it.
-  --to URL          a running Breeze μcore or Breeze Core 4, which it pairs
-                    with for the moment, adds the units to, and unpairs from.
+                    Core 4 and Breeze Core 3.x read it, and the μCore
+                    deployer can start from it.
+  --to URL          a running Breeze Core 4, which it pairs with for the
+                    moment, adds the units to, and unpairs from. (Breeze
+                    μCore takes its units from its deployer instead.)
 
 Without either, it asks.
 
@@ -144,13 +146,6 @@ fn main() {
     std::process::exit(code);
 }
 
-/// A unit, its name on the account, and its checked token.
-pub struct Fetched {
-    pub unit: Discovered,
-    pub name: Option<String>,
-    pub token: Token,
-}
-
 /// Where the tokens go.
 enum Destination {
     File(ConfigFile),
@@ -224,7 +219,10 @@ fn run(options: Options) -> Result<i32, String> {
         (None, false) => lan::Look::At(&options.ips),
         (None, true) => lan::Look::Around,
     };
-    let found = lan::find(look)?;
+    let lan::Found { units: found, unreadable } = lan::find(look)?;
+    for (ip, why) in &unreadable {
+        println!("  something at {ip} answered but could not be read: {why}");
+    }
     if found.is_empty() {
         say(
             "No units answered. Make sure they are powered on and on the same network as this \
@@ -309,7 +307,7 @@ fn destination(options: &Options) -> Result<Destination, String> {
             heading("Where the tokens go");
             println!("  1  a config.json    for a server to read when it starts (any Breeze Core),");
             println!("                      or to keep as a copy");
-            println!("  2  a running server Breeze μcore or Breeze Core 4, by its address");
+            println!("  2  a running Breeze Core 4, by its address");
             loop {
                 match ask("\nChoose 1 or 2: ")?.as_deref() {
                     Some("1") => {

@@ -7,19 +7,19 @@
 A V3 Midea air conditioner answers nothing without a token and a key, and only
 Midea's cloud hands them out. breeze-token fetches them from the account the
 units are paired with, checks each one on its unit, and gives them to any
-[Breeze Core](https://github.com/monikapurpl3/breeze-core-native):
-[Breeze μcore](https://github.com/monikapurpl3/breeze-ucore), Breeze Core 4,
-or the Python 3.x line.
+[Breeze Core](https://github.com/monikapurpl3/breeze-core-native): Breeze Core
+4 or the Python 3.x line, and, through its deployer,
+[Breeze μCore](https://github.com/monikapurpl3/breeze-ucore).
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
-[![For](https://img.shields.io/badge/for-Breeze%20μcore%20·%20Breeze%20Core%204%20·%20Breeze%20Core%203-e69138)](#why)
+[![For](https://img.shields.io/badge/for-Breeze%20Core%204%20·%20Breeze%20Core%203%20·%20Breeze%20μCore-e69138)](#why)
 
 </div>
 
 ```console
 $ breeze-token --to 192.168.1.10
 == The server ==
-  The key is right. http://192.168.1.10:8420 runs Breeze μcore 4.3.2+u1.0.0.
+  The key is right. http://192.168.1.10:8420 runs Breeze Core 4.4.0.
   Paired as "breeze-token on laptop", approved from here: this machine is on
   the server's network.
 
@@ -44,8 +44,9 @@ $ breeze-token --to 192.168.1.10
 ## Why
 
 Breeze Core 4 has `breeze-core fetch`, but it runs on the server. The other
-two cannot fetch at all: **Breeze μcore** is a microcontroller, with no TLS
-and no cloud, and **Breeze Core 3.x** asks Midea for a token itself whenever a
+two cannot fetch at all: **Breeze μCore** is a microcontroller, with no TLS
+and no cloud (its deployer fetches its units' tokens with breeze-token's
+library), and **Breeze Core 3.x** asks Midea for a token itself whenever a
 unit is added, through a request that no longer works, so it cannot add a V3
 unit. breeze-token is `fetch` on its own, for any machine on the units'
 network, and it keeps `fetch`'s promises:
@@ -97,7 +98,7 @@ named in SHA256SUMS.
 
 ```sh
 breeze-token --write config.json        # any Breeze Core reads it at start
-breeze-token --to 192.168.1.10          # a running Breeze μcore or Breeze Core 4
+breeze-token --to 192.168.1.10          # a running Breeze Core 4
 ```
 
 `--write` makes the file if it is not there, with an API key, and otherwise
@@ -145,10 +146,18 @@ sh packaging/build.sh      # every release binary, and SHA256SUMS, into packagin
 ```
 
 The end-to-end test (`tests/end_to_end.rs`) drives breeze-mock's units with
-Breeze Core 4.4.0 and Breeze μcore as the servers, and a pretend MSmartHome
+Breeze Core 4.4.0 and Breeze μCore as the servers, and a pretend MSmartHome
 account (the `fake-cloud` feature). It needs Linux with `CAP_NET_ADMIN` (a
 container is enough), and its header says how to run it. Nothing here is
 ever tested against a real Midea account.
+
+## As a library
+
+The crate is also a library (`breeze_token`) with the parts the command is
+made of, for a program that fetches tokens its own way: `clouds` (which of
+Midea's clouds knows an account, signing in, a unit's token), `lan` (the
+units on this network, and trying a token on one) and `Fetched`. The μCore
+deployer uses it. The promises above are then the caller's to keep.
 
 ## License
 

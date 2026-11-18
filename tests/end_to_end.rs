@@ -1,5 +1,5 @@
 //! breeze-token end to end, with everything real but Midea: breeze-mock's
-//! units, Breeze Core 4.4.0 and Breeze μcore as the servers, and a pretend
+//! units, Breeze Core 4.4.0 and Breeze μCore as the servers, and a pretend
 //! MSmartHome account (the `fake-cloud` feature) that holds the units'
 //! tokens.
 //!
@@ -273,10 +273,10 @@ fn tokens_reach_every_kind_of_breeze_core() {
     assert_eq!(code, 0, "{text}");
     assert!(text.contains("its token and key are there already"), "{text}");
 
-    // --- 3. To a running server: Breeze Core 4.4.0 and μcore, which start
-    // with no units. Paired (signed requests), added, unpaired.
-    let mut configs = Vec::new();
-    for (name, bin, port) in [("to-core", &env.core_bin, 29521u16), ("to-ucore", &env.ucore_bin, 29522)] {
+    // --- 3. To a running server: Breeze Core 4.4.0, which starts with no
+    // units. Paired (signed requests), added, unpaired.
+    {
+        let (name, bin, port) = ("to-core", &env.core_bin, 29521u16);
         let dir = env.dir(name, Some(json!({"api_key": KEY, "units": []})));
         let _server = env.serve(bin, &dir, port);
         let (code, text) = env.token(&["--subnet", "10.94.2.0/24", "--to", &format!("127.0.0.1:{port}")], PASSWORD, Some("wrong-key"));
@@ -295,9 +295,16 @@ fn tokens_reach_every_kind_of_breeze_core() {
         assert!(text.contains("Nothing here needs a token") && text.contains("is removed again"), "{name}: {text}");
         let devices: Value = serde_json::from_slice(&std::fs::read(dir.join("devices.json")).unwrap()).unwrap();
         assert_eq!(devices["devices"].as_array().unwrap().len(), 1, "{name}: {devices}");
-        configs.push(std::fs::read(dir.join("config.json")).unwrap());
     }
-    assert_eq!(configs[0], configs[1], "Breeze Core and μcore stored the units differently");
+    // μCore takes its units from its deployer, not over its API: refused,
+    // before anyone signs in, saying where to go instead.
+    {
+        let dir = env.dir("to-ucore", Some(json!({"api_key": KEY, "units": []})));
+        let _server = env.serve(&env.ucore_bin, &dir, 29522);
+        let (code, text) = env.token(&["--subnet", "10.94.2.0/24", "--to", "127.0.0.1:29522"], PASSWORD, Some(KEY));
+        assert_eq!(code, 1, "{text}");
+        assert!(text.contains("μCore deployer") && !text.contains("Signed in"), "{text}");
+    }
 
     // --- 4. A wrong password: nothing written, exit 1.
     let wrong = env.dir("wrong", None);

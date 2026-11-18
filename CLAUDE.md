@@ -1,14 +1,15 @@
 # breeze-token -- notes for working on it
 
 `breeze-core fetch` on its own: a V3 unit's token and key from Midea's cloud,
-checked on the unit, handed to any Breeze Core (μcore, native 4.x, Python
-3.x) as a config.json or over a server's API. Users' documentation is
+checked on the unit, handed to any Breeze Core (native 4.x, Python 3.x, and
+μCore through its deployer) as a config.json or over a server's API. Users' documentation is
 `README.md`.
 
 ## Layout
 
 | | |
 |---|---|
+| `src/lib.rs` | the library: `clouds`, `lan`, `Fetched`, for programs that fetch their own way (the μCore deployer) |
 | `src/main.rs` | arguments, and the flow: destination, units, cloud, fetch, hand-over |
 | `src/clouds.rs` | breeze-cloud behind a trait, and the `fake-cloud` pretend account |
 | `src/lan.rs` | discovery (breeze-device's scan) and the on-unit check |

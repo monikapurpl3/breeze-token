@@ -1,12 +1,12 @@
-//! `--write`: Breeze Core's config.json, which Breeze μcore, Breeze Core 4 and
-//! the Python 3.x line all read, written by Breeze Core's own store code.
+//! `--write`: Breeze Core's config.json, which Breeze Core 4 and the Python
+//! 3.x line read (and the μCore deployer can start from), written by Breeze Core's own store code.
 
 use base64::Engine as _;
 use breeze_store::models::{AppConfig, UnitConfig};
 use breeze_store::{Mode, StoreError};
 
 use crate::talk::say;
-use crate::Fetched;
+use breeze_token::Fetched;
 
 pub struct ConfigFile {
     path: String,

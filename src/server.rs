@@ -120,6 +120,13 @@ impl Server {
                             server.base
                         ));
                     }
+                    if name.contains("μCore") {
+                        return Err(format!(
+                            "{} runs {name} {version}, which takes its units from the μCore deployer (the \
+                             deployer fetches their tokens with this same code), not over its API.",
+                            server.base
+                        ));
+                    }
                     if !server.features.iter().any(|f| f == "config_api") {
                         return Err(format!("{name} {version} at {} cannot add units over its API. Write its config.json instead (--write).", server.base));
                     }

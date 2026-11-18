@@ -22,8 +22,15 @@ pub enum Look<'a> {
     At(&'a [String]),
 }
 
-/// Every unit that answered, once each, by address.
-pub fn find(look: Look) -> Result<Vec<Discovered>, String> {
+/// What answered.
+pub struct Found {
+    /// Every unit, once each, by address.
+    pub units: Vec<Discovered>,
+    /// Anything that answered but could not be read: its address, and why.
+    pub unreadable: Vec<(String, String)>,
+}
+
+pub fn find(look: Look) -> Result<Found, String> {
     let reports: Vec<ScanReport> = match look {
         Look::Around => vec![breeze_device::scan(LISTEN).map_err(|e| format!("discovery failed: {e}"))?],
         Look::Subnet(cidr) => vec![breeze_device::scan_subnet(cidr, LISTEN).map_err(|e| format!("discovery failed: {e}"))?],
@@ -49,9 +56,10 @@ pub fn find(look: Look) -> Result<Vec<Discovered>, String> {
         }
     };
     let mut found = BTreeMap::new();
+    let mut unreadable = Vec::new();
     for report in reports {
         for (ip, why) in &report.unparseable {
-            println!("  something at {ip} answered but could not be read: {why}");
+            unreadable.push((ip.to_string(), why.to_string()));
         }
         for unit in report.found {
             found.entry(unit.id).or_insert(unit);
@@ -59,7 +67,7 @@ pub fn find(look: Look) -> Result<Vec<Discovered>, String> {
     }
     let mut found: Vec<Discovered> = found.into_values().collect();
     found.sort_by_key(|u| u.ip);
-    Ok(found)
+    Ok(Found { units: found, unreadable })
 }
 
 /// Try a token on the unit: a V3 handshake and a state read, which change
